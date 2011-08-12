@@ -24,6 +24,7 @@
 #define DBFFILE_HPP
 
 #include <mapnik/feature.hpp>
+#include <mapnik/attribute_stats.hpp>
 // boost
 #include <boost/utility.hpp>
 #include <boost/interprocess/streams/bufferstream.hpp>
@@ -44,6 +45,7 @@ struct field_descriptor
     char type_;
     int length_;
     int dec_;
+    attribute_stats *stats_;
     std::streampos offset_;
 };
 
@@ -77,6 +79,7 @@ private:
     int read_short();
     int read_int();
     void skip(int bytes);
+    void read_statistics();
 };
 
 #endif //DBFFILE_HPP

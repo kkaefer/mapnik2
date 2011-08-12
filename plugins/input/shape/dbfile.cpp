@@ -202,6 +202,7 @@ void dbf_file::read_header()
             desc.dec_=file_.get();
             skip(14);
             desc.offset_=offset;
+            desc.stats_=NULL;
             offset+=desc.length_;
             fields_.push_back(desc);
         }
@@ -209,6 +210,57 @@ void dbf_file::read_header()
         if (record_length_>0)
         {
             record_=static_cast<char*>(::operator new (sizeof(char)*record_length_));
+        }
+    }
+    // TODO: lazy load this
+    // read_statistics();
+}
+
+
+void dbf_file::read_statistics()
+{
+    using namespace boost::spirit;
+
+    for (int col = 0; col < num_fields_; ++col)
+    {
+        if (fields_[col].type_ == 'N')
+        {
+            fields_[col].stats_ = new attribute_stats();
+        }
+    }
+
+    // Loop over each row.
+    for (int index = 0; index <= num_records_; ++index)
+    {
+        std::streampos pos=(num_fields_<<5)+34+(index-1)*(record_length_+1);
+        file_.seekg(pos,std::ios::beg);
+        file_.read(record_,record_length_);
+
+        for (int col = 0; col < num_fields_; ++col)
+        {
+            if (fields_[col].stats_)
+            {
+                if (record_[fields_[col].offset_] == '*')
+                {
+                    fields_[col].stats_->update(0);
+                }
+                if ( fields_[col].dec_>0 )
+                {
+                    double val = 0.0;
+                    const char *itr = record_+fields_[col].offset_;
+                    const char *end = itr + fields_[col].length_;
+                    qi::phrase_parse(itr,end,double_,ascii::space,val);
+                    fields_[col].stats_->update(val);
+                }
+                else
+                {
+                    int val = 0;
+                    const char *itr = record_+fields_[col].offset_;
+                    const char *end = itr + fields_[col].length_;
+                    qi::phrase_parse(itr,end,int_,ascii::space,val);
+                    fields_[col].stats_->update(val);
+                }
+            }
         }
     }
 }

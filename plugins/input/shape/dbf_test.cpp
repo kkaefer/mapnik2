@@ -45,20 +45,35 @@ int main(int argc,char** argv)
         {
             for (int j=0;j<dbf.num_fields();++j)
             {
-                int width=dbf.descriptor(j).length_;
+                int width=max<int>(dbf.descriptor(j).length_,dbf.descriptor(j).name_.length() + 3);
                 string name=dbf.descriptor(j).name_;
                 char type=dbf.descriptor(j).type_;
-                cout<<setw(width)<<name<<"("<<type<<")""|";
+                cout<<setw(width-3)<<name<<"("<<type<<")""|";
             }
             cout<<endl;
         }
         for (int j=0;j<dbf.num_fields();++j)
         {
-            int width=dbf.descriptor(j).length_;
+            int width=max<int>(dbf.descriptor(j).length_,dbf.descriptor(j).name_.length() + 3);
             string val=dbf.string_value(j);
             cout <<setw(width)<<val<<"|";
         }
         cout<<endl;
+    }
+    cout<<endl;
+    for (int j=0;j<dbf.num_fields();++j)
+    {
+        string name=dbf.descriptor(j).name_;
+        attribute_stats *stats=dbf.descriptor(j).stats_;
+        if (stats)
+        {
+            char type=dbf.descriptor(j).type_;
+            cout<<name<<"("<<type<<")"<<endl;
+            cout<<"    min: "<<stats->min()<<endl;
+            cout<<"    max: "<<stats->max()<<endl;
+            cout<<"   mean: "<<stats->mean()<<endl;
+            cout<<endl;
+        }
     }
     cout<<"done!"<<endl;
     return 0;
