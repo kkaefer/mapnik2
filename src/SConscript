@@ -120,6 +120,7 @@ source = Split(
     plugin.cpp
     png_reader.cpp
     point_symbolizer.cpp
+    polygon_expression_symbolizer.cpp
     polygon_pattern_symbolizer.cpp
     save_map.cpp
     shield_symbolizer.cpp
@@ -133,6 +134,7 @@ source = Split(
     memory_datasource.cpp
     stroke.cpp
     symbolizer.cpp
+    expression_symbolizer.cpp
     arrow.cpp
     unicode.cpp
     glyph_symbolizer.cpp
@@ -181,6 +183,7 @@ source += Split(
     agg/process_text_symbolizer.cpp
     agg/process_point_symbolizer.cpp
     agg/process_polygon_symbolizer.cpp
+    agg/process_polygon_expression_symbolizer.cpp
     agg/process_polygon_pattern_symbolizer.cpp
     agg/process_raster_symbolizer.cpp
     agg/process_shield_symbolizer.cpp
@@ -204,6 +207,7 @@ source += Split(
     grid/process_point_symbolizer.cpp
     grid/process_polygon_pattern_symbolizer.cpp
     grid/process_polygon_symbolizer.cpp
+    grid/process_polygon_expression_symbolizer.cpp
     grid/process_raster_symbolizer.cpp
     grid/process_shield_symbolizer.cpp
     grid/process_text_symbolizer.cpp	
@@ -224,6 +228,7 @@ if env['SVG_RENDERER']: # svg backend
       	svg/process_point_symbolizer.cpp
       	svg/process_polygon_pattern_symbolizer.cpp
       	svg/process_polygon_symbolizer.cpp
+      	svg/process_polygon_expression_symbolizer.cpp
       	svg/process_raster_symbolizer.cpp
       	svg/process_shield_symbolizer.cpp
       	svg/process_text_symbolizer.cpp	

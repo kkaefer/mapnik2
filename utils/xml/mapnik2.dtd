@@ -86,7 +86,8 @@
 
 <!ELEMENT Rule ((Filter|ElseFilter)|MaxScaleDenominator|MinScaleDenominator|
                   BuildingSymbolizer|PointSymbolizer|LineSymbolizer|PolygonSymbolizer|PolygonPatternSymbolizer|
-                  LinePatternSymbolizer|MarkersSymbolizer|RasterSymbolizer|ShieldSymbolizer|TextSymbolizer)*>
+                  PolygonExpressionSymbolizer|LinePatternSymbolizer|MarkersSymbolizer|RasterSymbolizer|
+                  ShieldSymbolizer|TextSymbolizer)*>
 <!-- FIXME: MapnikXMLDescription.pdf specified name is required?  -->
 <!ATTLIST Rule
           name        CDATA    #IMPLIED
@@ -170,6 +171,8 @@
 >
 
 <!ELEMENT PolygonSymbolizer (CssParameter)*>
+
+<!ELEMENT PolygonExpressionSymbolizer (CssParameter)*>
 
 <!ELEMENT RasterSymbolizer (CssParameter)*>
 

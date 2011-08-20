@@ -115,6 +115,31 @@ public:
         add_metawriter_attributes(sym_node, sym);
     }
 
+    void operator () ( const polygon_expression_symbolizer & sym )
+    {
+        ptree & sym_node = rule_.push_back(
+            ptree::value_type("PolygonExpressionSymbolizer", ptree()))->second;
+        polygon_expression_symbolizer dfl;
+
+        if ( sym.get_fill() != dfl.get_fill() || explicit_defaults_ )
+        {
+            set_attr( sym_node, "fill", sym.get_fill() );
+        }
+
+        if ( sym.get_opacity() != dfl.get_opacity() || explicit_defaults_ )
+        {
+            const std::string & opacity = to_expression_string(*sym.get_opacity());
+            if ( ! opacity.empty() || explicit_defaults_ ) {
+                set_attr( sym_node, "fill-opacity", opacity );
+            }
+        }
+        if ( sym.get_gamma() != dfl.get_gamma() || explicit_defaults_ )
+        {
+            set_attr( sym_node, "gamma", sym.get_gamma() );
+        }
+        add_metawriter_attributes(sym_node, sym);
+    }
+
     void operator () ( const polygon_pattern_symbolizer & sym )
     {
         ptree & sym_node = rule_.push_back(
@@ -606,6 +631,15 @@ private:
                 
     }
     void add_metawriter_attributes(ptree &node, symbolizer_base const& sym)
+    {
+        if (!sym.get_metawriter_name().empty() || explicit_defaults_) {
+            set_attr(node, "meta-writer", sym.get_metawriter_name());
+        }
+        if (!sym.get_metawriter_properties_overrides().empty() || explicit_defaults_) {
+            set_attr(node, "meta-output", sym.get_metawriter_properties_overrides().to_string());
+        }
+    }
+    void add_metawriter_attributes(ptree &node, expression_symbolizer_base const& sym)
     {
         if (!sym.get_metawriter_name().empty() || explicit_defaults_) {
             set_attr(node, "meta-writer", sym.get_metawriter_name());

@@ -90,6 +90,7 @@ private:
     void parse_layer(Map & map, ptree const & lay);
     void parse_metawriter(Map & map, ptree const & lay);
     void parse_metawriter_in_symbolizer(symbolizer_base &sym, ptree const &pt);
+    void parse_metawriter_in_symbolizer(expression_symbolizer_base &sym, ptree const &pt);
 
     void parse_fontset(Map & map, ptree const & fset);
     void parse_font(font_set & fset, ptree const & f);
@@ -103,6 +104,7 @@ private:
     void parse_shield_symbolizer(rule & rule, ptree const & sym);
     void parse_line_symbolizer(rule & rule, ptree const & sym);
     void parse_polygon_symbolizer(rule & rule, ptree const & sym);
+    void parse_polygon_expression_symbolizer(rule & rule, ptree const & sym);
     void parse_building_symbolizer(rule & rule, ptree const & sym );
     void parse_raster_symbolizer(rule & rule, ptree const & sym );
     void parse_markers_symbolizer(rule & rule, ptree const & sym );
@@ -787,6 +789,10 @@ void map_parser::parse_rule( feature_type_style & style, ptree const & r )
             {
                 parse_polygon_symbolizer( rule, sym.second );
             }
+            else if ( sym.first == "PolygonExpressionSymbolizer")
+            {
+                parse_polygon_expression_symbolizer( rule, sym.second );
+            }
             else if ( sym.first == "BuildingSymbolizer")
             {
                 parse_building_symbolizer( rule, sym.second );
@@ -830,6 +836,14 @@ void map_parser::parse_rule( feature_type_style & style, ptree const & r )
 }
 
 void map_parser::parse_metawriter_in_symbolizer(symbolizer_base &sym, ptree const &pt)
+{
+    optional<std::string> writer =  get_opt_attr<std::string>(pt, "meta-writer");
+    if (!writer) return;
+    optional<std::string> output =  get_opt_attr<std::string>(pt, "meta-output");
+    sym.add_metawriter(*writer, output);
+}
+
+void map_parser::parse_metawriter_in_symbolizer(expression_symbolizer_base &sym, ptree const &pt)
 {
     optional<std::string> writer =  get_opt_attr<std::string>(pt, "meta-writer");
     if (!writer) return;
@@ -1815,6 +1829,33 @@ void map_parser::parse_polygon_symbolizer( rule & rule, ptree const & sym )
     catch (const config_error & ex)
     {
         ex.append_context("in PolygonSymbolizer");
+        throw;
+    }
+}
+
+
+void map_parser::parse_polygon_expression_symbolizer( rule & rule, ptree const & sym )
+{
+    ensure_attrs(sym, "PolygonExpressionSymbolizer", "fill,fill-opacity,gamma,meta-writer,meta-output");
+    try
+    {
+        polygon_expression_symbolizer poly_sym;
+        // fill
+        optional<color> fill = get_opt_attr<color>(sym, "fill");
+        if (fill) poly_sym.set_fill(*fill);
+        // fill-opacity
+        optional<std::string> opacity = get_opt_attr<std::string>(sym, "fill-opacity");
+        if (opacity) poly_sym.set_opacity(parse_expression(*opacity, "utf8"));
+        // gamma
+        optional<double> gamma = get_opt_attr<double>(sym, "gamma");
+        if (gamma)  poly_sym.set_gamma(*gamma);
+
+        parse_metawriter_in_symbolizer(poly_sym, sym);
+        rule.append(poly_sym);
+    }
+    catch (const config_error & ex)
+    {
+        ex.append_context("in PolygonExpressionSymbolizer");
         throw;
     }
 }

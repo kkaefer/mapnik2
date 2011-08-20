@@ -66,6 +66,9 @@ namespace mapnik
         void process(polygon_symbolizer const& sym,
                Feature const& feature,
                proj_transform const& prj_trans);
+        void process(polygon_expression_symbolizer const& sym,
+               Feature const& feature,
+               proj_transform const& prj_trans);
         void process(polygon_pattern_symbolizer const& sym,
                Feature const& feature,
                proj_transform const& prj_trans);
