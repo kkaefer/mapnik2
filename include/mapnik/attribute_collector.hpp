@@ -140,6 +140,17 @@ struct symbolizer_attributes : public boost::static_visitor<>
         collect_metawriter(sym);
     }
 
+    void operator () (polygon_expression_symbolizer const& sym)
+    {
+        expression_ptr const& opacity_expr = sym.get_opacity();
+        if (opacity_expr)
+        {
+            expression_attributes f_attr(names_);
+            boost::apply_visitor(f_attr, *opacity_expr);
+        }
+        collect_metawriter(sym);
+    }
+
     void operator () (polygon_pattern_symbolizer const& sym)
     {   
         path_expression_ptr const& filename_expr = sym.get_filename();
@@ -220,6 +231,11 @@ struct symbolizer_attributes : public boost::static_visitor<>
 private:
     std::set<std::string>& names_;
     void collect_metawriter(symbolizer_base const& sym)
+    {
+        metawriter_properties const& properties = sym.get_metawriter_properties();
+        names_.insert(properties.begin(), properties.end());
+    }
+    void collect_metawriter(expression_symbolizer_base const& sym)
     {
         metawriter_properties const& properties = sym.get_metawriter_properties();
         names_.insert(properties.begin(), properties.end());
