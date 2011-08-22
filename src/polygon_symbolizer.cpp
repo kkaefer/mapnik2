@@ -22,62 +22,62 @@
 //$Id$
 
 // mapnik
-#include <mapnik/polygon_expression_symbolizer.hpp>
+#include <mapnik/polygon_symbolizer.hpp>
 
 namespace mapnik
 {
 
-const double polygon_expression_symbolizer::default_opacity_ = 1.0;
-const double polygon_expression_symbolizer::default_gamma_ = 1.0;
+const double polygon_symbolizer::default_opacity_ = 1.0;
+const double polygon_symbolizer::default_gamma_ = 1.0;
 
-polygon_expression_symbolizer::polygon_expression_symbolizer()
-    : expression_symbolizer_base(),
+polygon_symbolizer::polygon_symbolizer()
+    : symbolizer_base(),
     fill_(color(128,128,128)),
     opacity_(expression_ptr_empty),
     gamma_(expression_ptr_empty) {}
 
-polygon_expression_symbolizer::polygon_expression_symbolizer(color const& fill)
-    : expression_symbolizer_base(),
+polygon_symbolizer::polygon_symbolizer(color const& fill)
+    : symbolizer_base(),
     fill_(fill),
     opacity_(expression_ptr_empty),
     gamma_(expression_ptr_empty) {}
 
-color const& polygon_expression_symbolizer::get_fill() const
+color const& polygon_symbolizer::get_fill() const
 {
     return fill_;
 }
 
-void polygon_expression_symbolizer::set_fill(color const& fill)
+void polygon_symbolizer::set_fill(color const& fill)
 {
     fill_ = fill;
 }
 
-void polygon_expression_symbolizer::set_opacity(expression_ptr opacity)
+void polygon_symbolizer::set_opacity(expression_ptr opacity)
 {
     opacity_ = opacity;
 }
 
-expression_ptr polygon_expression_symbolizer::get_opacity() const
+expression_ptr polygon_symbolizer::get_opacity() const
 {
     return opacity_;
 }
 
-double polygon_expression_symbolizer::get_opacity(Feature const& feature) const
+double polygon_symbolizer::get_opacity(Feature const& feature) const
 {
     return std::max(0.0, std::min(1.0, to_double(opacity_, feature, default_opacity_)));
 }
 
-void polygon_expression_symbolizer::set_gamma(expression_ptr gamma)
+void polygon_symbolizer::set_gamma(expression_ptr gamma)
 {
     gamma_ = gamma;
 }
 
-expression_ptr polygon_expression_symbolizer::get_gamma() const
+expression_ptr polygon_symbolizer::get_gamma() const
 {
     return gamma_;
 }
 
-double polygon_expression_symbolizer::get_gamma(Feature const& feature) const
+double polygon_symbolizer::get_gamma(Feature const& feature) const
 {
     return to_double(gamma_, feature, default_gamma_);
 }

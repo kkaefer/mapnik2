@@ -750,30 +750,6 @@ void cairo_renderer_base::process(polygon_symbolizer const& sym,
 
     cairo_context context(context_);
 
-    context.set_color(sym.get_fill(), sym.get_opacity());
-
-    for (unsigned i = 0; i < feature.num_geometries(); ++i)
-    {
-        geometry_type const& geom = feature.get_geometry(i);
-
-        if (geom.num_points() > 2)
-        {
-            path_type path(t_, geom, prj_trans);
-
-            context.add_path(path);
-            context.fill();
-        }
-    }
-}
-
-void cairo_renderer_base::process(polygon_expression_symbolizer const& sym,
-                                  Feature const& feature,
-                                  proj_transform const& prj_trans)
-{
-    typedef coord_transform2<CoordTransform,geometry_type> path_type;
-
-    cairo_context context(context_);
-
     context.set_color(sym.get_fill(), sym.get_opacity(feature));
 
     for (unsigned i = 0; i < feature.num_geometries(); ++i)

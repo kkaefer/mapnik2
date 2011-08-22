@@ -120,11 +120,6 @@ struct symbolizer_attributes : public boost::static_visitor<>
 
     void operator () (polygon_symbolizer const& sym)
     {
-        collect_metawriter(sym);
-    }
-
-    void operator () (polygon_expression_symbolizer const& sym)
-    {
         collect(sym.get_opacity());
         collect(sym.get_gamma());
         collect_metawriter(sym);
@@ -167,11 +162,6 @@ struct symbolizer_attributes : public boost::static_visitor<>
 private:
     std::set<std::string>& names_;
     void collect_metawriter(symbolizer_base const& sym)
-    {
-        metawriter_properties const& properties = sym.get_metawriter_properties();
-        names_.insert(properties.begin(), properties.end());
-    }
-    void collect_metawriter(expression_symbolizer_base const& sym)
     {
         metawriter_properties const& properties = sym.get_metawriter_properties();
         names_.insert(properties.begin(), properties.end());

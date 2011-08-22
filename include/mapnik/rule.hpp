@@ -27,7 +27,6 @@
 #include <mapnik/line_symbolizer.hpp>
 #include <mapnik/line_pattern_symbolizer.hpp>
 #include <mapnik/polygon_symbolizer.hpp>
-#include <mapnik/polygon_expression_symbolizer.hpp>
 #include <mapnik/polygon_pattern_symbolizer.hpp>
 #include <mapnik/point_symbolizer.hpp>
 #include <mapnik/raster_symbolizer.hpp>
@@ -69,12 +68,6 @@ inline bool operator==(polygon_symbolizer const& lhs,
                        polygon_symbolizer const& rhs)
 {
     return (&lhs == &rhs); 
-}
-
-inline bool operator==(polygon_expression_symbolizer const& lhs,
-                       polygon_expression_symbolizer const& rhs)
-{
-    return (&lhs == &rhs);
 }
     
 inline bool operator==(polygon_pattern_symbolizer const& lhs,
@@ -122,7 +115,6 @@ typedef boost::variant<point_symbolizer,
                        line_symbolizer,
                        line_pattern_symbolizer,
                        polygon_symbolizer,
-                       polygon_expression_symbolizer,
                        polygon_pattern_symbolizer,
                        raster_symbolizer,
                        shield_symbolizer,
