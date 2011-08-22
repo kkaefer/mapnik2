@@ -83,41 +83,28 @@ private:
     std::set<std::string>& names_;
 };
 
+// This visitor receives a symbolizer and extracts all placeholders (like
+// [NAME] or [POP2005]) from the attributes so that the datasource will load
+// these attributes.
 struct symbolizer_attributes : public boost::static_visitor<>
 {
     symbolizer_attributes(std::set<std::string>& names)
         : names_(names) {}
-        
+
     template <typename T>
     void operator () (T const&) const {}
-    
+
     void operator () (text_symbolizer const& sym)
     {
-        expression_ptr const& name_expr = sym.get_name();
-        if (name_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*name_expr);
-        }
-
-        expression_ptr const& orientation_expr = sym.get_orientation();
-        if (orientation_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*orientation_expr);
-        }
+        collect(sym.get_name());
+        collect(sym.get_orientation());
         collect_metawriter(sym);
     }
-    
-    void operator () (point_symbolizer const& sym)
-    {   
-        path_expression_ptr const& filename_expr = sym.get_filename();
-        if (filename_expr)
-        {
-            path_processor_type::collect_attributes(*filename_expr,names_);
-        }
-        collect_metawriter(sym);
 
+    void operator () (point_symbolizer const& sym)
+    {
+        collect(sym.get_filename());
+        collect_metawriter(sym);
     }
 
     void operator () (line_symbolizer const& sym)
@@ -126,12 +113,8 @@ struct symbolizer_attributes : public boost::static_visitor<>
     }
 
     void operator () (line_pattern_symbolizer const& sym)
-    {   
-        path_expression_ptr const& filename_expr = sym.get_filename();
-        if (filename_expr)
-        {
-            path_processor_type::collect_attributes(*filename_expr,names_);
-        }
+    {
+        collect(sym.get_filename());
         collect_metawriter(sym);
     }
 
@@ -142,78 +125,31 @@ struct symbolizer_attributes : public boost::static_visitor<>
 
     void operator () (polygon_expression_symbolizer const& sym)
     {
-        expression_ptr const& opacity_expr = sym.get_opacity();
-        if (opacity_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr, *opacity_expr);
-        }
+        collect(sym.get_opacity());
+        collect(sym.get_gamma());
         collect_metawriter(sym);
     }
 
     void operator () (polygon_pattern_symbolizer const& sym)
-    {   
-        path_expression_ptr const& filename_expr = sym.get_filename();
-        if (filename_expr)
-        {
-            path_processor_type::collect_attributes(*filename_expr,names_);
-        }
+    {
+        collect(sym.get_filename());
         collect_metawriter(sym);
     }
-    
+
     void operator () (shield_symbolizer const& sym)
     {
-        expression_ptr const& name_expr = sym.get_name();
-        if (name_expr)
-        {
-            expression_attributes name_attr(names_);
-            boost::apply_visitor(name_attr,*name_expr);
-        }
-        
-        path_expression_ptr const& filename_expr = sym.get_filename();
-        if (filename_expr)
-        {
-            path_processor_type::collect_attributes(*filename_expr,names_);
-        }
+        collect(sym.get_name());
+        collect(sym.get_filename());
         collect_metawriter(sym);
     }
 
     void operator () (glyph_symbolizer const& sym)
     {
-        expression_ptr const& char_expr = sym.get_char();
-        if (char_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*char_expr);
-        }
-
-        expression_ptr const& angle_expr = sym.get_angle();
-        if (angle_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*angle_expr);
-        }
-
-        expression_ptr const& value_expr = sym.get_value();
-        if (value_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*value_expr);
-        }
-
-        expression_ptr const& size_expr = sym.get_size();
-        if (size_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*size_expr);
-        }
-
-        expression_ptr const& color_expr = sym.get_color();
-        if (color_expr)
-        {
-            expression_attributes f_attr(names_);
-            boost::apply_visitor(f_attr,*color_expr);
-        }
+        collect(sym.get_char());
+        collect(sym.get_angle());
+        collect(sym.get_value());
+        collect(sym.get_size());
+        collect(sym.get_color());
         collect_metawriter(sym);
     }
 
@@ -227,7 +163,7 @@ struct symbolizer_attributes : public boost::static_visitor<>
         collect_metawriter(sym);
     }
     // TODO - support remaining syms
-    
+
 private:
     std::set<std::string>& names_;
     void collect_metawriter(symbolizer_base const& sym)
@@ -240,9 +176,26 @@ private:
         metawriter_properties const& properties = sym.get_metawriter_properties();
         names_.insert(properties.begin(), properties.end());
     }
+    void collect(expression_ptr const& expr)
+    {
+        if (expr)
+        {
+            expression_attributes f_attr(names_);
+            boost::apply_visitor(f_attr, *expr);
+        }
+    }
+    void collect(path_expression_ptr const& expr)
+    {
+        if (expr)
+        {
+            path_processor_type::collect_attributes(*expr, names_);
+        }
+    }
 };
 
 
+// The attribute collector receives a Rule and gathers all attributs referenced
+// in symbolizers it contains as well as those in the <Filter> tag.
 class attribute_collector : public boost::noncopyable
 {
 private:
