@@ -33,7 +33,6 @@ using mapnik::point_symbolizer;
 using mapnik::line_symbolizer;
 using mapnik::line_pattern_symbolizer;
 using mapnik::polygon_symbolizer;
-using mapnik::polygon_expression_symbolizer;
 using mapnik::polygon_pattern_symbolizer;
 using mapnik::raster_symbolizer;
 using mapnik::shield_symbolizer;
@@ -65,11 +64,6 @@ public:
     std::string operator () ( const polygon_symbolizer & /*sym*/ )
     {
         return "polygon";
-    }
-    
-    std::string operator () ( const polygon_expression_symbolizer & /*sym*/ )
-    {
-        return "polygon_expression";
     }
     
     std::string operator () ( const polygon_pattern_symbolizer & /*sym*/ )

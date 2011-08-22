@@ -90,17 +90,17 @@ struct symbolizer_attributes : public boost::static_visitor<>
 {
     symbolizer_attributes(std::set<std::string>& names)
         : names_(names) {}
-
+        
     template <typename T>
     void operator () (T const&) const {}
-
+    
     void operator () (text_symbolizer const& sym)
     {
         collect(sym.get_name());
         collect(sym.get_orientation());
         collect_metawriter(sym);
     }
-
+    
     void operator () (point_symbolizer const& sym)
     {
         collect(sym.get_filename());
@@ -130,7 +130,7 @@ struct symbolizer_attributes : public boost::static_visitor<>
         collect(sym.get_filename());
         collect_metawriter(sym);
     }
-
+    
     void operator () (shield_symbolizer const& sym)
     {
         collect(sym.get_name());
@@ -158,7 +158,7 @@ struct symbolizer_attributes : public boost::static_visitor<>
         collect_metawriter(sym);
     }
     // TODO - support remaining syms
-
+    
 private:
     std::set<std::string>& names_;
     void collect_metawriter(symbolizer_base const& sym)

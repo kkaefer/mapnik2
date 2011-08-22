@@ -56,7 +56,7 @@ private:
     static const double default_opacity_;
     static const double default_gamma_;
 }; 
-
+   
 struct MAPNIK_DECL building_symbolizer : public symbolizer_base
 {
     explicit building_symbolizer() 

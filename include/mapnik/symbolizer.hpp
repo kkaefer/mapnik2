@@ -48,8 +48,7 @@ class MAPNIK_DECL symbolizer_base {
             properties_complete_(),
             writer_name_(),
             writer_ptr_() {}
-
-
+            
         static expression_ptr expression_ptr_empty;
 
         /** Evaluates a value expression if one is set */
