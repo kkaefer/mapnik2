@@ -28,6 +28,10 @@
 #include <mapnik/config.hpp>
 #include <mapnik/parse_path.hpp>
 #include <mapnik/metawriter.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/filter_factory.hpp>
+#include <mapnik/expression_string.hpp>
+#include <mapnik/expression_evaluator.hpp>
 
 // boost
 #include <boost/array.hpp>
@@ -44,6 +48,21 @@ class MAPNIK_DECL expression_symbolizer_base {
             properties_complete_(),
             writer_name_(),
             writer_ptr_() {}
+
+        static expression_ptr expression_ptr_empty;
+
+        /** Evaluates a value expression if one is set */
+        double to_double(expression_ptr expr, Feature const& feature, double dflt) const
+        {
+            if (expr == expression_ptr_empty)
+            {
+                return dflt;
+            }
+            else
+            {
+                return boost::apply_visitor(evaluate<Feature, value_type>(feature), *expr).to_double();
+            }
+        }
 
         /** Add a metawriter to this symbolizer using a name. */
         void add_metawriter(std::string const& name, metawriter_properties const& properties);

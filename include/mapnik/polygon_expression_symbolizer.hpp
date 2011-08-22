@@ -28,10 +28,6 @@
 // mapnik
 #include <mapnik/color.hpp>
 #include <mapnik/expression_symbolizer.hpp>
-#include <mapnik/feature.hpp>
-#include <mapnik/filter_factory.hpp>
-#include <mapnik/expression_string.hpp>
-#include <mapnik/expression_evaluator.hpp>
 
 namespace mapnik
 {
@@ -42,16 +38,19 @@ struct MAPNIK_DECL polygon_expression_symbolizer : public expression_symbolizer_
 
     color const& get_fill() const;
     void set_fill(color const& fill);
-    void set_opacity(expression_ptr opacity);
+
     expression_ptr get_opacity() const;
+    void set_opacity(expression_ptr opacity);
     double get_opacity(Feature const& feature) const;
-    void set_gamma(double gamma);
-    double get_gamma() const;
+
+    expression_ptr get_gamma() const;
+    void set_gamma(expression_ptr gamma);
+    double get_gamma(Feature const& feature) const;
 
 private:
     color fill_;
     expression_ptr opacity_;
-    double gamma_;
+    expression_ptr gamma_;
 
     // Default values
     static const double default_opacity_;

@@ -27,6 +27,8 @@
 
 namespace mapnik {
 
+expression_ptr expression_symbolizer_base::expression_ptr_empty;
+
 void expression_symbolizer_base::add_metawriter(std::string const& name, metawriter_properties const& properties)
 {
     writer_name_ = name;

@@ -30,19 +30,17 @@ namespace mapnik
 const double polygon_expression_symbolizer::default_opacity_ = 1.0;
 const double polygon_expression_symbolizer::default_gamma_ = 1.0;
 
-expression_ptr expression_ptr_empty;
-
 polygon_expression_symbolizer::polygon_expression_symbolizer()
     : expression_symbolizer_base(),
     fill_(color(128,128,128)),
     opacity_(expression_ptr_empty),
-    gamma_(default_gamma_) {}
+    gamma_(expression_ptr_empty) {}
 
 polygon_expression_symbolizer::polygon_expression_symbolizer(color const& fill)
     : expression_symbolizer_base(),
     fill_(fill),
     opacity_(expression_ptr_empty),
-    gamma_(default_gamma_) {}
+    gamma_(expression_ptr_empty) {}
 
 color const& polygon_expression_symbolizer::get_fill() const
 {
@@ -56,7 +54,6 @@ void polygon_expression_symbolizer::set_fill(color const& fill)
 
 void polygon_expression_symbolizer::set_opacity(expression_ptr opacity)
 {
-    fprintf(stderr, "setting filter %s\n", to_expression_string(*opacity).c_str());
     opacity_ = opacity;
 }
 
@@ -67,29 +64,22 @@ expression_ptr polygon_expression_symbolizer::get_opacity() const
 
 double polygon_expression_symbolizer::get_opacity(Feature const& feature) const
 {
-    if (opacity_ == expression_ptr_empty)
-    {
-        fprintf(stderr, "Returning default opacity\n");
-        return default_opacity_;
-    }
-    else
-    {
-        // std::cout << feature;
-        value_type result = boost::apply_visitor(evaluate<Feature, value_type>(feature), *opacity_);
-        fprintf(stderr, "Returning opacity: %f\n", result.to_double());
-        return std::max(0.0, std::min(1.0, result.to_double()));
-    }
+    return std::max(0.0, std::min(1.0, to_double(opacity_, feature, default_opacity_)));
 }
 
-void polygon_expression_symbolizer::set_gamma(double gamma)
+void polygon_expression_symbolizer::set_gamma(expression_ptr gamma)
 {
     gamma_ = gamma;
 }
 
-double polygon_expression_symbolizer::get_gamma() const
+expression_ptr polygon_expression_symbolizer::get_gamma() const
 {
     return gamma_;
 }
 
+double polygon_expression_symbolizer::get_gamma(Feature const& feature) const
+{
+    return to_double(gamma_, feature, default_gamma_);
 }
 
+} // namespace mapnik

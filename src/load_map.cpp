@@ -1846,9 +1846,9 @@ void map_parser::parse_polygon_expression_symbolizer( rule & rule, ptree const &
         // fill-opacity
         optional<std::string> opacity = get_opt_attr<std::string>(sym, "fill-opacity");
         if (opacity) poly_sym.set_opacity(parse_expression(*opacity, "utf8"));
-        // gamma
-        optional<double> gamma = get_opt_attr<double>(sym, "gamma");
-        if (gamma)  poly_sym.set_gamma(*gamma);
+        // fill-opacity
+        optional<std::string> gamma = get_opt_attr<std::string>(sym, "gamma");
+        if (gamma) poly_sym.set_gamma(parse_expression(*gamma, "utf8"));
 
         parse_metawriter_in_symbolizer(poly_sym, sym);
         rule.append(poly_sym);
