@@ -216,7 +216,7 @@ void save_to_stream(T const& image,
 
             if (colors < 0)
                 save_as_png(stream, image, compression, strategy);
-            if (use_octree)
+            else if (use_octree)
                 save_as_png256(stream, image, colors, compression, strategy);
             else
                 save_as_png256_hex(stream, image, colors, compression, strategy, trans_mode, gamma);
