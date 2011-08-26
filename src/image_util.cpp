@@ -74,24 +74,27 @@ extern "C"
 
 namespace mapnik
 {    
+
 template <typename T>
 std::string save_to_string(T const& image,
-                           std::string const& type)
+                           std::string const& type,
+                           rgba_palette& palette)
 {
     std::ostringstream ss(std::ios::out|std::ios::binary);
-    save_to_stream(image, ss, type);
+    save_to_stream(image, ss, type, palette);
     return ss.str();
 }
 
 template <typename T>
 void save_to_file(T const& image,
                   std::string const& filename,
-                  std::string const& type)
+                  std::string const& type,
+                  rgba_palette& palette)
 {
     std::ofstream file (filename.c_str(), std::ios::out| std::ios::trunc|std::ios::binary);
     if (file)
     {
-        save_to_stream(image, file, type);
+        save_to_stream(image, file, type, palette);
     }
     else throw ImageWriterException("Could not write file to " + filename );
 }
@@ -99,7 +102,8 @@ void save_to_file(T const& image,
 template <typename T>
 void save_to_stream(T const& image,
                     std::ostream & stream,
-                    std::string const& type)
+                    std::string const& type,
+                    rgba_palette& palette)
 {
     if (stream)
     {
@@ -220,12 +224,14 @@ void save_to_stream(T const& image,
                 }
             }
 
-            if (colors < 0)
+            if (palette.valid())
+                save_as_png8_pal(stream, image, palette, compression, strategy);
+            else if (colors < 0)
                 save_as_png(stream, image, compression, strategy);
             else if (use_octree)
-                save_as_png256(stream, image, colors, compression, strategy);
+                save_as_png8_oct(stream, image, colors, compression, strategy);
             else
-                save_as_png256_hex(stream, image, colors, compression, strategy, trans_mode, gamma);
+                save_as_png8_hex(stream, image, colors, compression, strategy, trans_mode, gamma);
         }
 #if defined(HAVE_JPEG)
         else if (boost::algorithm::istarts_with(type,std::string("jpeg")))
@@ -251,15 +257,14 @@ void save_to_stream(T const& image,
     } 
     else throw ImageWriterException("Could not write to empty stream" );
 }
-        
-        
+
 template <typename T>
-void save_to_file(T const& image,std::string const& filename)
+void save_to_file(T const& image,std::string const& filename, rgba_palette& palette)
 {
     boost::optional<std::string> type = type_from_filename(filename);
     if (type)
     {
-        save_to_file<T>(image,filename,*type);
+        save_to_file<T>(image, filename, *type, palette);
     }
 }
 
@@ -322,23 +327,29 @@ void save_to_cairo_file(mapnik::Map const& map,
 
 template void save_to_file<image_data_32>(image_data_32 const&,
                                           std::string const&,
-                                          std::string const&);
+                                          std::string const&,
+                                          rgba_palette& palette);
 
 template void save_to_file<image_data_32>(image_data_32 const&,
-                                          std::string const&);
+                                          std::string const&,
+                                          rgba_palette& palette);
 
 template std::string save_to_string<image_data_32>(image_data_32 const&,
-                                                   std::string const&);
+                                                   std::string const&,
+                                                   rgba_palette& palette);
 
 template void save_to_file<image_view<image_data_32> > (image_view<image_data_32> const&,
                                                         std::string const&,
-                                                        std::string const&);
+                                                        std::string const&,
+                                                        rgba_palette& palette);
    
 template void save_to_file<image_view<image_data_32> > (image_view<image_data_32> const&,
-                                                        std::string const&);
+                                                        std::string const&,
+                                                        rgba_palette& palette);
    
 template std::string save_to_string<image_view<image_data_32> > (image_view<image_data_32> const&,
-                                                                 std::string const&);
+                                                                 std::string const&,
+                                                                 rgba_palette& palette);
 
 
 
