@@ -224,7 +224,7 @@ void save_to_stream(T const& image,
                 }
             }
 
-            if (palette.valid())
+            if (&palette != NULL && palette.valid())
                 save_as_png8_pal(stream, image, palette, compression, strategy);
             else if (colors < 0)
                 save_as_png(stream, image, compression, strategy);
