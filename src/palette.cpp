@@ -1,5 +1,5 @@
 /*****************************************************************************
- * 
+ *
  * This file is part of Mapnik (c++ mapping toolkit)
  *
  * Copyright (C) 2006 Artem Pavlenko
@@ -71,10 +71,10 @@ std::size_t rgba::hash_func::operator()(rgba const& p) const
 }
 
 
-rgba_palette::rgba_palette(std::string const& pal)
+rgba_palette::rgba_palette(std::string const& pal, palette_type type)
     : colors_(0)
 {
-    parse(pal);
+    parse(pal, type);
 }
 
 rgba_palette::rgba_palette()
@@ -165,25 +165,39 @@ unsigned int rgba_palette::quantize(rgba const& c)
     return index;
 }
 
-void rgba_palette::parse(std::string const& pal)
+void rgba_palette::parse(std::string const& pal, palette_type type)
 {
     int length = pal.length();
-    if (length % 4 > 0)
+
+    if ((type == PALETTE_RGBA && length % 4 > 0) ||
+        (type == PALETTE_RGB && length % 3 > 0) ||
+        (type == PALETTE_ACT && length != 772))
+    {
         throw config_error("invalid palette length");
+    }
+
+    if (type == PALETTE_ACT)
+    {
+        length = pal[768] << 8 | pal[769];
+    }
 
     sorted_pal_.clear();
     color_hashmap_.clear();
     rgb_pal_.clear();
     alpha_pal_.clear();
 
-    for (unsigned i = 0; i < length; i += 4)
+    if (type == PALETTE_RGBA) for (unsigned i = 0; i < length; i += 4)
     {
         sorted_pal_.push_back(rgba(pal[i], pal[i + 1], pal[i + 2], pal[i + 3]));
+    }
+    else for (unsigned i = 0; i < length; i += 3)
+    {
+        sorted_pal_.push_back(rgba(pal[i], pal[i + 1], pal[i + 2], 0xFF));
     }
 
     // Make sure we have at least one entry in the palette.
     if (sorted_pal_.size() == 0)
-        sorted_pal_.push_back(rgba(0,0,0,0));
+        sorted_pal_.push_back(rgba(0, 0, 0, 0));
 
     colors_ = sorted_pal_.size();
 

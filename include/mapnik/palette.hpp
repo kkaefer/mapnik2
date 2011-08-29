@@ -86,7 +86,9 @@ typedef boost::unordered_map<rgba, int, rgba::hash_func> rgba_hash_table;
 
 class rgba_palette : private boost::noncopyable {
 public:
-    explicit rgba_palette(std::string const& pal);
+    enum palette_type { PALETTE_RGBA = 0, PALETTE_RGB = 1, PALETTE_ACT = 2 };
+
+    explicit rgba_palette(std::string const& pal, palette_type type = PALETTE_RGBA);
     explicit rgba_palette();
 
     const std::vector<rgb>& palette() const;
@@ -95,7 +97,7 @@ public:
     bool valid();
 
 private:
-    void parse(std::string const& pal);
+    void parse(std::string const& pal, palette_type type);
 
 private:
     std::vector<rgba> sorted_pal_;
