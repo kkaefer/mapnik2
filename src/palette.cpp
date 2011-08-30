@@ -178,7 +178,7 @@ void rgba_palette::parse(std::string const& pal, palette_type type)
 
     if (type == PALETTE_ACT)
     {
-        length = pal[768] << 8 | pal[769];
+        length = (pal[768] << 8 | pal[769]) * 3;
     }
 
     sorted_pal_.clear();
