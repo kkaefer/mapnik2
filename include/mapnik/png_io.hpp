@@ -39,18 +39,6 @@ extern "C"
 
 #define MAX_OCTREE_LEVELS 4
 
-#ifdef MAPNIK_BIG_ENDIAN
-#define U2RED(x) (((x)>>24)&0xff)
-#define U2GREEN(x) (((x)>>16)&0xff)
-#define U2BLUE(x) (((x)>>8)&0xff)
-#define U2ALPHA(x) ((x)&0xff)
-#else
-#define U2RED(x) ((x)&0xff)
-#define U2GREEN(x) (((x)>>8)&0xff)
-#define U2BLUE(x) (((x)>>16)&0xff)
-#define U2ALPHA(x) (((x)>>24)&0xff)
-#endif
-
 namespace mapnik {
    
 template <typename T>
@@ -482,9 +470,7 @@ void save_as_png8(T1 & file, T2 const& image, T3& tree,
 
             for (unsigned x = 0; x < width; ++x)
             {
-                unsigned val = row[x];
-                mapnik::rgba c(U2RED(val), U2GREEN(val), U2BLUE(val), U2ALPHA(val));
-                row_out[x] = tree.quantize(c);
+                row_out[x] = tree.quantize(row[x]);
             }
         }
         save_as_png(file, palette, reduced_image, width, height, 8, compression, strategy, alphaTable);
@@ -512,9 +498,8 @@ void save_as_png8(T1 & file, T2 const& image, T3& tree,
 
             for (unsigned x = 0; x < width; ++x)
             {
-                unsigned val = row[x];
-                mapnik::rgba c(U2RED(val), U2GREEN(val), U2BLUE(val), U2ALPHA(val));
-                index = tree.quantize(c);
+
+                index = tree.quantize(row[x]);
                 if (x%2 == 0) index = index<<4;
                 row_out[x>>1] |= index;
             }

@@ -25,31 +25,8 @@
 namespace mapnik
 {
 
-
-rgb::rgb(byte r_, byte g_, byte b_)
-    : r(r_), g(g_), b(b_) {}
-
 rgb::rgb(rgba const& c)
     : r(c.r), g(c.g), b(c.b) {}
-
-bool rgb::operator==(const rgb& y) const
-{
-    return r == y.r && g == y.g && b == y.b;
-}
-
-
-rgba::rgba(byte r_, byte g_, byte b_, byte a_)
-    : r(r_), g(g_), b(b_), a(a_)
-{}
-
-rgba::rgba(rgb const& c)
-    : r(c.r), g(c.g), b(c.b), a(0xFF)
-{}
-
-bool rgba::operator==(const rgba& y) const
-{
-    return r == y.r && g == y.g && b == y.b && a == y.a;
-}
 
 // ordering by mean(a,r,g,b), a, r, g, b
 bool rgba::mean_sort_cmp::operator() (const rgba& x, const rgba& y) const
@@ -96,7 +73,7 @@ bool rgba_palette::valid()
 }
 
 // return color index in returned earlier palette
-unsigned int rgba_palette::quantize(rgba const& c)
+unsigned rgba_palette::quantize(rgba const& c)
 {
     unsigned index = 0;
     if (colors_ == 1) return index;

@@ -35,27 +35,43 @@
 
 // stl
 #include <vector>
+#include <map>
 #include <iostream>
 #include <set>
 #include <algorithm>
 #include <cmath>
 
+
+#ifdef MAPNIK_BIG_ENDIAN
+#define U2RED(x) (((x)>>24)&0xff)
+#define U2GREEN(x) (((x)>>16)&0xff)
+#define U2BLUE(x) (((x)>>8)&0xff)
+#define U2ALPHA(x) ((x)&0xff)
+#else
+#define U2RED(x) ((x)&0xff)
+#define U2GREEN(x) (((x)>>8)&0xff)
+#define U2BLUE(x) (((x)>>16)&0xff)
+#define U2ALPHA(x) (((x)>>24)&0xff)
+#endif
+
+
 namespace mapnik {
 
 typedef boost::uint8_t byte;
-struct rgb;
 struct rgba;
 
-
-struct rgb
-{
+struct rgb {
     byte r;
     byte g;
     byte b;
 
-    rgb(byte r_, byte g_, byte b_);
+    inline rgb(byte r_, byte g_, byte b_) : r(r_), g(g_), b(b_) {};
     rgb(rgba const& c);
-    bool operator==(const rgb& y) const;
+
+    inline bool operator==(const rgb& y) const
+    {
+        return r == y.r && g == y.g && b == y.b;
+    }
 };
 
 struct rgba
@@ -65,9 +81,32 @@ struct rgba
     byte b;
     byte a;
 
-    rgba(byte r_, byte g_, byte b_, byte a_);
-    rgba(rgb const& c);
-    bool operator==(const rgba& y) const;
+    inline rgba(byte r_, byte g_, byte b_, byte a_)
+        : r(r_), g(g_), b(b_), a(a_) {}
+
+    inline rgba(rgb const& c)
+        : r(c.r), g(c.g), b(c.b), a(0xFF) {}
+
+    inline rgba(unsigned const& c) {
+        r = U2RED(c);
+        g = U2GREEN(c);
+        b = U2BLUE(c);
+        a = U2ALPHA(c);
+    }
+
+    inline bool operator==(const rgba& y) const
+    {
+        return r == y.r && g == y.g && b == y.b && a == y.a;
+    }
+
+    inline operator unsigned() const
+    {
+#ifdef MAPNIK_BIG_ENDIAN
+        return (r << 24) | (g << 16) | (b << 8) | a;
+#else
+        return r | (g << 8) | (b << 16) | (a << 24);
+#endif
+    }
 
     // ordering by mean(a,r,g,b), a, r, g, b
     struct mean_sort_cmp
@@ -81,7 +120,8 @@ struct rgba
     };
 };
 
-typedef boost::unordered_map<rgba, int, rgba::hash_func> rgba_hash_table;
+
+typedef boost::unordered_map<unsigned, unsigned> rgba_hash_table;
 
 
 class rgba_palette : private boost::noncopyable {
@@ -93,7 +133,20 @@ public:
 
     const std::vector<rgb>& palette() const;
     const std::vector<unsigned>& alphaTable() const;
-    unsigned int quantize(rgba const& c);
+
+    unsigned quantize(rgba const& c);
+    inline unsigned quantize(unsigned const& c)
+    {
+        rgba_hash_table::iterator it = color_hashmap_.find(c);
+        if (it != color_hashmap_.end())
+        {
+            return it->second;
+        }
+        else {
+            return quantize(rgba(U2RED(c), U2GREEN(c), U2BLUE(c), U2ALPHA(c)));
+        }
+    }
+
     bool valid();
 
 private:
