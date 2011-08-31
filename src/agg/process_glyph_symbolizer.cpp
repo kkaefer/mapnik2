@@ -39,8 +39,8 @@ void agg_renderer<T>::process(glyph_symbolizer const& sym,
                               proj_transform const& prj_trans)
 {
     face_set_ptr faces = font_manager_.get_face_set(sym.get_face_name());
-    stroker_ptr strk = font_manager_.get_stroker();
-    if (faces->size() > 0 && strk)
+    //stroker_ptr strk = font_manager_.get_stroker();
+    if (faces->size() > 0/* && strk*/)
     {
         // Get x and y from geometry and translate to pixmap coords.
         double x, y, z=0.0;
@@ -48,7 +48,7 @@ void agg_renderer<T>::process(glyph_symbolizer const& sym,
         prj_trans.backward(x,y,z);
         t_.forward(&x, &y);
 
-        text_renderer<T> ren(pixmap_, faces, *strk);
+        text_renderer<T> ren(pixmap_, faces/*, *strk*/);
 
         // set fill and halo colors
         color fill = sym.eval_color(feature);

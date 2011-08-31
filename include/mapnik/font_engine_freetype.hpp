@@ -329,10 +329,10 @@ struct text_renderer : private boost::noncopyable
     typedef boost::ptr_vector<glyph_t> glyphs_t;
     typedef T pixmap_type;
 
-    text_renderer (pixmap_type & pixmap, face_set_ptr faces, stroker & s)
+    text_renderer (pixmap_type & pixmap, face_set_ptr faces/*, stroker & s*/)
         : pixmap_(pixmap),
           faces_(faces),
-          stroker_(s),
+          //stroker_(s),
           fill_(0,0,0),
           halo_fill_(255,255,255),
           halo_radius_(0.0),
@@ -454,7 +454,22 @@ struct text_renderer : private boost::noncopyable
         //make sure we've got reasonable values.
         if (halo_radius_ > 0.0 && halo_radius_ < 1024.0)
         {
-            stroker_.init(halo_radius_);   
+            // old method
+            for ( pos = glyphs_.begin(); pos != glyphs_.end();++pos)
+            {
+                FT_Glyph_Transform(pos->image,0,&start);
+                error = FT_Glyph_To_Bitmap( &(pos->image),FT_RENDER_MODE_NORMAL,0,1);
+                if (!error)
+                {
+                    FT_BitmapGlyph bit = (FT_BitmapGlyph)pos->image;
+                    render_halo(&bit->bitmap, halo_fill_.rgba(),
+                                        bit->left,
+                                        height - bit->top,halo_radius_);
+                }
+            }
+
+            // stroker method
+            /*stroker_.init(halo_radius_);
             for ( pos = glyphs_.begin(); pos != glyphs_.end();++pos)
             {
                 FT_Glyph g;
@@ -474,8 +489,9 @@ struct text_renderer : private boost::noncopyable
                     }
                 }
                 FT_Done_Glyph(g);
-            }    
+            }*/
         }
+        
         //render actual text
         for ( pos = glyphs_.begin(); pos != glyphs_.end();++pos)
         {
@@ -494,9 +510,9 @@ struct text_renderer : private boost::noncopyable
         }
     }
 
-    void render_id(int feature_id,double x0, double y0, double min_radius=1.0)
+    void render_id(int feature_id, double x0, double y0, double min_radius=1.0)
     {
-        FT_Error  error;
+        /*FT_Error  error;
         FT_Vector start;
         unsigned height = pixmap_.height();
 
@@ -506,34 +522,26 @@ struct text_renderer : private boost::noncopyable
         // now render transformed glyphs
         typename glyphs_t::iterator pos;
 
-        stroker_.init(std::max(halo_radius_,min_radius));   
         for ( pos = glyphs_.begin(); pos != glyphs_.end();++pos)
         {
-            FT_Glyph g;
-            error = FT_Glyph_Copy(pos->image, &g);
-            if (!error)
+            for ( pos = glyphs_.begin(); pos != glyphs_.end();++pos)
             {
-                FT_Glyph_Transform(g,0,&start);
-                FT_Glyph_Stroke(&g,stroker_.get(),1);
-                error = FT_Glyph_To_Bitmap( &g,FT_RENDER_MODE_NORMAL,0,1);
-                //error = FT_Glyph_To_Bitmap( &g,FT_RENDER_MODE_MONO,0,1);
-                if ( ! error )
+                FT_Glyph_Transform(pos->image,0,&start);
+                error = FT_Glyph_To_Bitmap( &(pos->image),FT_RENDER_MODE_NORMAL,0,1);
+                if (!error)
                 {
-                    
-                    FT_BitmapGlyph bit = (FT_BitmapGlyph)g;
-                    render_bitmap_id(&bit->bitmap, feature_id,
-                                  bit->left,
-                                  height - bit->top);
+                    FT_BitmapGlyph bit = (FT_BitmapGlyph)pos->image;
+                    render_halo_id(feature_id,&bit->bitmap, halo_fill_.rgba(), 
+	 	                                bit->left, 
+	 	                                height - bit->top,halo_radius_);
                 }
             }
-            FT_Done_Glyph(g);
-        }    
+        }*/
     }
     
 private:
 
     // unused currently, stroker is the new method for drawing halos
-    /*
     void render_halo(FT_Bitmap *bitmap,unsigned rgba,int x,int y,int radius)
     {
         int x_max=x+bitmap->width;
@@ -554,7 +562,27 @@ private:
             }
         }
     }
-    */
+
+    void render_halo_id(int feature_id, FT_Bitmap *bitmap,unsigned rgba,int x,int y,int radius)
+    {
+        int x_max=x+bitmap->width;
+        int y_max=y+bitmap->rows;
+        int i,p,j,q;
+
+        for (i=x,p=0;i<x_max;++i,++p)
+        {
+            for (j=y,q=0;j<y_max;++j,++q)
+            {
+                int gray = bitmap->buffer[q*bitmap->width+p];
+                if (gray)
+                {
+                    for (int n=-halo_radius_; n <=halo_radius_; ++n)
+                        for (int m=-halo_radius_;m <= halo_radius_; ++m)
+                            pixmap_.blendPixel2(feature_id, i+m,j+n,rgba,gray,opacity_);
+                }
+            }
+        }
+    }
 
     void render_bitmap(FT_Bitmap *bitmap,unsigned rgba,int x,int y)
     {
@@ -597,7 +625,7 @@ private:
 
     pixmap_type & pixmap_;
     face_set_ptr faces_;
-    stroker & stroker_;
+    //stroker & stroker_;
     color fill_;
     color halo_fill_;
     double halo_radius_;

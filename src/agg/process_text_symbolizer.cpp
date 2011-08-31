@@ -70,12 +70,12 @@ void agg_renderer<T>::process(text_symbolizer const& sym,
             faces = font_manager_.get_face_set(sym.get_face_name());
         }
 
-        stroker_ptr strk = font_manager_.get_stroker();
-        if (!(faces->size() > 0 && strk))
+        //stroker_ptr strk = font_manager_.get_stroker();
+        if (!(faces->size() > 0/* && strk*/))
         {
             throw config_error("Unable to find specified font face '" + sym.get_face_name() + "'");
         }
-        text_renderer<T> ren(pixmap_, faces, *strk);
+        text_renderer<T> ren(pixmap_, faces/*, *strk*/);
         ren.set_pixel_size(placement_options->text_size * scale_factor_);
         ren.set_fill(fill);
         ren.set_halo_fill(sym.get_halo_fill());

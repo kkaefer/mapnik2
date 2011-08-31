@@ -102,10 +102,10 @@ void  agg_renderer<T>::process(shield_symbolizer const& sym,
             faces = font_manager_.get_face_set(sym.get_face_name());
         }
 
-        stroker_ptr strk = font_manager_.get_stroker();
-        if (strk && faces->size() > 0)
+        //stroker_ptr strk = font_manager_.get_stroker();
+        if (/*strk &&*/ faces->size() > 0)
         {
-            text_renderer<T> ren(pixmap_, faces, *strk);
+            text_renderer<T> ren(pixmap_, faces/*, *strk*/);
 
             ren.set_pixel_size(sym.get_text_size() * scale_factor_);
             ren.set_fill(sym.get_fill());
