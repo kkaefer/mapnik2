@@ -27,10 +27,6 @@
 #include <mapnik/ptree_helpers.hpp>
 #include <mapnik/sql_utils.hpp>
 
-#ifdef MAPNIK_DEBUG
-//#include <mapnik/wall_clock_timer.hpp>
-#endif
-
 #include "connection_manager.hpp"
 #include "postgis_datasource.hpp"
 #include "postgis_featureset.hpp"
@@ -120,6 +116,9 @@ void postgis_datasource::bind() const
         shared_ptr<Connection> conn = pool->borrowObject();
         if (conn && conn->isOK())
         {
+
+            is_bound_ = true;
+
             PoolGuard<shared_ptr<Connection>,
                       shared_ptr<Pool<Connection,ConnectionCreator> > > guard(conn,pool);
          
@@ -334,8 +333,6 @@ void postgis_datasource::bind() const
             rs->close();
         }
     }
-    
-    is_bound_ = true;
 }
 
 std::string postgis_datasource::name()
@@ -454,10 +451,6 @@ featureset_ptr postgis_datasource::features(const query& q) const
 {
     if (!is_bound_) bind();
     
-#ifdef MAPNIK_DEBUG
-    //mapnik::wall_clock_progress_timer timer(clog, "end feature query: ");
-#endif
-
     box2d<double> const& box = q.get_bbox();
     double scale_denom = q.scale_denominator();
     ConnectionManager *mgr=ConnectionManager::instance();
@@ -472,7 +465,7 @@ featureset_ptr postgis_datasource::features(const query& q) const
             if (!geometryColumn_.length() > 0)
             {
                 std::ostringstream s_error;
-                s_error << "PostGIS: geometry name lookup failed for table '";
+                s_error << "geometry name lookup failed for table '";
                 if (schema_.length() > 0)
                 {
                     s_error << schema_ << ".";

@@ -85,8 +85,8 @@ sqlite_datasource::sqlite_datasource(parameters const& params, bool bind)
 
     if (table_.empty()) {
         throw mapnik::datasource_exception("Sqlite Plugin: missing <table> parameter");
-    } 
-
+    }
+    
     boost::optional<std::string> key_field_name = params_.get<std::string>("key_field");
     if (key_field_name) {
         std::string const& key_field_string = *key_field_name;
@@ -174,10 +174,25 @@ void sqlite_datasource::parse_attachdb(std::string const& attachdb) {
             // It is a relative path.  Fix it.
             if (!child_path.has_root_directory() && !child_path.has_root_name()) {
                 boost::filesystem::path absolute_path(dataset_name_);
+
+                // support symlinks
                 #if (BOOST_FILESYSTEM_VERSION == 3)
+                if (boost::filesystem::is_symlink(absolute_path))
+                {
+                    absolute_path = boost::filesystem::read_symlink(absolute_path);
+                }
+
                 filename = boost::filesystem::absolute(absolute_path.parent_path()/filename).string();
+
                 #else
+                if (boost::filesystem::is_symlink(absolute_path))
+                {
+                    //cannot figure out how to resolve on in v2 so just print a warning
+                    std::clog << "###Warning: '" << absolute_path.string() << "' is a symlink which is not supported in attachdb\n";
+                }
+
                 filename = boost::filesystem::complete(absolute_path.branch_path()/filename).normalize().string();
+
                 #endif
             }
         }
@@ -204,13 +219,11 @@ void sqlite_datasource::bind() const
 #endif
         dataset_->execute(*iter);
     }
-         
     
     if(geometry_table_.empty())
     {
         geometry_table_ = mapnik::table_from_sql(table_);
     }
-    
 
     // should we deduce column names and types using PRAGMA?
     bool use_pragma_table_info = true;
@@ -364,7 +377,7 @@ void sqlite_datasource::bind() const
         // Generate implicit index_table name - need to do this after
         // we have discovered meta-data or else we don't know the column
         // name
-        index_table_ = "idx_" + mapnik::unquote_sql2(geometry_table_) + "_" + geometry_field_;
+        index_table_ = "\"idx_" + mapnik::unquote_sql2(geometry_table_) + "_" + geometry_field_ + "\"";
     }
     
     if (use_spatial_index_)
@@ -456,11 +469,14 @@ void sqlite_datasource::bind() const
         sqlite3_stmt* stmt = 0;
 
         if (use_spatial_index_) {    
-            dataset_->execute_with_code(spatial_index_sql);
+            dataset_->execute(spatial_index_sql);
             int rc = sqlite3_prepare_v2 (*(*dataset_), spatial_index_insert_sql.c_str(), -1, &stmt, 0);
             if (rc != SQLITE_OK)
             {
-               throw datasource_exception("Sqlite Plugin: auto-index table creation failed");
+               std::ostringstream index_error;
+               index_error << "Sqlite Plugin: auto-index table creation failed: '"
+                 << sqlite3_errmsg(*(*dataset_)) << "' query was: " << spatial_index_insert_sql;
+               throw datasource_exception(index_error.str());
             }
         }
 
