@@ -116,6 +116,7 @@ void save_to_stream(T const& image,
             int strategy = Z_DEFAULT_STRATEGY;
             int trans_mode = -1;
             double gamma = -1;
+            bool alpha = true;
             bool use_octree = true;
 
             if (type == "png" || type == "png24" || type == "png32")
@@ -123,17 +124,18 @@ void save_to_stream(T const& image,
                 // Shortcut when the user didn't specify any flags after the colon.
                 // Paletted images specify "png8 or png256".
                 colors = -1;
+                if (type == "png24")
+                {
+                    alpha = false;
+                }
             }
-            if (type.length() > 6){
+            if (type.length() > 6)
+            {
                 boost::char_separator<char> sep(":");
                 boost::tokenizer< boost::char_separator<char> > tokens(type, sep);
                 BOOST_FOREACH(std::string t, tokens)
                 {
-                    if (t == "png" || t == "png24" || t == "png32")
-                    {
-                        colors = -1;
-                    }
-                    else if (t == "m=h")
+                    if (t == "m=h")
                     {
                         use_octree = false;
                     }
@@ -228,7 +230,7 @@ void save_to_stream(T const& image,
             if (&palette != NULL && palette.valid())
                 save_as_png8_pal(stream, image, palette, compression, strategy);
             else if (colors < 0)
-                save_as_png(stream, image, compression, strategy);
+                save_as_png(stream, image, compression, strategy, alpha);
             else if (use_octree)
                 save_as_png8_oct(stream, image, colors, compression, strategy);
             else

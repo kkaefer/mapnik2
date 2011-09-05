@@ -56,7 +56,11 @@ void flush_data (png_structp png_ptr)
 }
 
 template <typename T1, typename T2>
-void save_as_png(T1 & file , T2 const& image, int compression = Z_DEFAULT_COMPRESSION, int strategy = Z_DEFAULT_STRATEGY)
+void save_as_png(T1 & file ,
+                 T2 const& image,
+                 int compression = Z_DEFAULT_COMPRESSION,
+                 int strategy = Z_DEFAULT_STRATEGY,
+                 bool alpha = true)
 {        
     png_voidp error_ptr=0;
     png_structp png_ptr=png_create_write_struct(PNG_LIBPNG_VER_STRING,
@@ -90,9 +94,20 @@ void save_as_png(T1 & file , T2 const& image, int compression = Z_DEFAULT_COMPRE
     png_set_compression_strategy(png_ptr, strategy);
     png_set_compression_buffer_size(png_ptr, 32768);
 
-    png_set_IHDR(png_ptr, info_ptr,image.width(),image.height(),8,
-                 PNG_COLOR_TYPE_RGB_ALPHA,PNG_INTERLACE_NONE,
-                 PNG_COMPRESSION_TYPE_DEFAULT,PNG_FILTER_TYPE_DEFAULT);
+    if (!alpha)
+    {
+        png_set_IHDR(png_ptr, info_ptr, image.width(), image.height(), 8,
+                     PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+        png_set_filler(png_ptr, 0, PNG_FILLER_AFTER);
+    }
+    else
+    {
+        png_set_IHDR(png_ptr, info_ptr, image.width(), image.height(), 8,
+                     PNG_COLOR_TYPE_RGB_ALPHA, PNG_INTERLACE_NONE,
+                     PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+    }
+
     png_write_info(png_ptr, info_ptr);
     for (unsigned i=0;i<image.height();i++)
     {
