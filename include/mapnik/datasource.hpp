@@ -31,11 +31,14 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/query.hpp>
 #include <mapnik/feature_layer_desc.hpp>
+
 // boost
 #include <boost/utility.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/threadpool.hpp>
+
 // stl
 #include <map>
 #include <string>
@@ -81,7 +84,7 @@ public:
     public:
         retrieval(datasource_ptr ds, query_ptr q) : datasource_(ds), query_(q) {
             mutex_.lock();
-            boost::thread(boost::bind(&retrieval::retrieve, this));
+            pool().schedule(boost::bind(&retrieval::retrieve, this));
         }
 
         featureset_ptr features() {
@@ -102,11 +105,22 @@ public:
             try {
                 features_ = datasource_->features(*query_);
             }
-            catch(...) {
-                std::clog << "error in rendering thread\n";
+            catch (const mapnik::datasource_exception& ex) {
+                std::clog << "Datasource exception in retrieval thread: " << ex.what() << "\n";
+            }
+            catch (const std::exception& ex) {
+                std::clog << "Exception in retrieval thread: " << ex.what() << "\n";
+            }
+            catch (...) {
+                std::clog << "Exception in retrieval thread\n";
             }
 
             mutex_.unlock();
+        }
+
+        static boost::threadpool::pool& pool() {
+            static boost::threadpool::pool pool(25);
+            return pool;
         }
 
     private:
