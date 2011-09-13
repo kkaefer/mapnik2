@@ -50,14 +50,14 @@ private:
     std::set<std::string> names_;
 public:
          
-    query(box2d<double> const& bbox, resolution_type const& resolution, double scale_denominator = 1.0)
+    query(box2d<double> const bbox, resolution_type const resolution, double scale_denominator = 1.0)
         : bbox_(bbox),
           resolution_(resolution),
           scale_denominator_(scale_denominator),
           filter_factor_(1.0)
     {}
 
-    query(box2d<double> const& bbox)
+    query(box2d<double> const bbox)
         : bbox_(bbox),
           resolution_(resolution_type(1.0,1.0)),
           scale_denominator_(1.0),
@@ -123,6 +123,9 @@ public:
         return names_;
     }
 };
+
+typedef boost::shared_ptr<query> query_ptr;
+
 }
 
 

@@ -23,9 +23,7 @@
 //mapnik
 #include <mapnik/feature_style_processor.hpp>
 #include <mapnik/box2d.hpp>
-#include <mapnik/datasource.hpp>
 #include <mapnik/layer.hpp>
-#include <mapnik/map.hpp>
 #include <mapnik/attribute_collector.hpp>
 #include <mapnik/expression_evaluator.hpp>
 #include <mapnik/utils.hpp>
@@ -38,9 +36,11 @@
 
 // boost
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 
 //stl
 #include <vector>
+#include <queue>
 
 #if defined(HAVE_CAIRO)
 #include <mapnik/cairo_renderer.hpp>
@@ -109,13 +109,28 @@ void feature_style_processor<Processor>::apply()
         double scale_denom = mapnik::scale_denominator(m_,proj.is_geographic());
         scale_denom *= scale_factor_;
 
+        std::queue<std::pair<layer const&, layer_render_task_ptr> > tasks;
+
+        // Retrieve data for each layer in parallel.
         BOOST_FOREACH ( layer const& lyr, m_.layers() )
         {
             if (lyr.isVisible(scale_denom))
             {
                 std::set<std::string> names;
-                apply_to_layer(lyr, p, proj, scale_denom, names);
+                // std::clog << "about to prepare " << lyr.name() << std::endl;
+                tasks.push(std::make_pair<layer const&, layer_render_task_ptr>(lyr, prepare_layer(lyr, p, proj, scale_denom, names)));
+                // std::clog << "prepared " << lyr.name() << std::endl;
             }
+        }
+
+        // Paint each layer
+        while (tasks.size())
+        {
+            std::pair<layer const&, layer_render_task_ptr> task = tasks.front();
+            tasks.pop();
+            // std::clog << "about to render " << task.first.name() << std::endl;
+            apply_to_layer(task.first, p, task.second, scale_denom);
+            // std::clog << "rendered " << task.first.name() << std::endl;
         }
 
         stop_metawriters(m_);
@@ -147,7 +162,8 @@ void feature_style_processor<Processor>::apply(mapnik::layer const& lyr, std::se
 
         if (lyr.isVisible(scale_denom))
         {
-            apply_to_layer(lyr, p, proj, scale_denom, names);
+            layer_render_task_ptr rt = prepare_layer(lyr, p, proj, scale_denom, names);
+            apply_to_layer(lyr, p, rt, scale_denom);
         }
     }
     catch (proj_init_error& ex)
@@ -182,7 +198,7 @@ void feature_style_processor<Processor>::stop_metawriters(Map const& m_)
 }
 
 template <typename Processor>
-void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Processor & p,
+layer_render_task_ptr feature_style_processor<Processor>::prepare_layer(layer const& lay, Processor & p,
                     projection const& proj0,
                     double scale_denom,
                     std::set<std::string>& names)
@@ -192,31 +208,30 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     unsigned int num_styles = style_names.size();
     if (!num_styles) {
         std::clog << "WARNING: No style for layer '" << lay.name() << "'\n";
-        return;
+        return layer_render_task_ptr();
     }
 
     mapnik::datasource_ptr ds = lay.datasource();
     if (!ds)
     {
         std::clog << "WARNING: No datasource for layer '" << lay.name() << "'\n";
-        return;
+        return layer_render_task_ptr();
     }
 
     p.start_layer_processing(lay);
 
-#if defined(RENDERING_STATS)
-    progress_timer layer_timer(std::clog, "rendering total for layer: '" + lay.name() + "'");
-#endif
+    layer_render_task_ptr rt = boost::make_shared<layer_render_task>(lay);
 
     projection proj1(lay.srs());
-    proj_transform prj_trans(proj0,proj1);
+    rt->set_prj_trans(boost::make_shared<proj_transform>(proj0, proj1));
+    proj_transform& prj_trans = rt->prj_trans();
 
-#if defined(RENDERING_STATS)
-    if (!prj_trans.equal())
-        std::clog << "notice: reprojecting layer: '" << lay.name() << "' from/to:\n\t'" 
-            << lay.srs() << "'\n\t'"
-            << m_.srs() << "'\n";
-#endif
+    #if defined(RENDERING_STATS)
+        if (!prj_trans.equal())
+            std::clog << "notice: reprojecting layer: '" << lay.name() << "' from/to:\n\t'" 
+                << lay.srs() << "'\n\t'"
+                << m_.srs() << "'\n";
+    #endif
 
     box2d<double> map_ext = m_.get_buffered_extent();
 
@@ -236,10 +251,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     // if no intersection and projections are also equal, early return
     else if (prj_trans.equal())
     {
-        #if defined(RENDERING_STATS)
-        layer_timer.discard();
-        #endif
-        return;
+        return layer_render_task_ptr();
     }
     // next try intersection of layer extent back projected into map srs
     else if (prj_trans.backward(layer_ext) && map_ext.intersects(layer_ext))
@@ -254,10 +266,7 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     else
     {
         // if no intersection then nothing to do for layer
-        #if defined(RENDERING_STATS)
-        layer_timer.discard();
-        #endif
-        return;
+        return layer_render_task_ptr();
     }
     
     box2d<double> const & query_ext = m_.get_current_extent();
@@ -265,12 +274,10 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     query::resolution_type res(m_.width()/query_ext.width(),
                                m_.height()/query_ext.height());
 
-    query q(layer_ext,res,scale_denom);
+    query_ptr q = boost::make_shared<query>(layer_ext,res,scale_denom);
 
-    std::vector<feature_type_style*> active_styles;
+    std::vector<feature_type_style*>& active_styles = rt->styles();
     attribute_collector collector(names);
-    double filt_factor = 1;
-    directive_collector d_collector(&filt_factor);
 
     // iterate through all named styles collecting active styles and attribute names
     BOOST_FOREACH(std::string const& style_name, style_names)
@@ -307,20 +314,58 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
     // push all property names
     BOOST_FOREACH(std::string const& name, names)
     {
-        q.add_property_name(name);
+        q->add_property_name(name);
     }
 
+    double filt_factor = 1;
+    directive_collector d_collector(&filt_factor);
+
+    if (ds->type() == datasource::Raster &&
+        ds->params().get<double>("filter_factor",0.0) == 0.0)
+    {
+        BOOST_FOREACH (feature_type_style * style, active_styles)
+        {
+            BOOST_FOREACH(rule const& r, style->get_rules())
+            {
+                if (r.active(scale_denom))
+                {
+                    rule::symbolizers const& symbols = r.get_symbolizers();
+                    rule::symbolizers::const_iterator symIter = symbols.begin();
+                    rule::symbolizers::const_iterator symEnd = symbols.end();
+                    while (symIter != symEnd)
+                    {
+                        // if multiple raster symbolizers, last will be respected
+                        // should we warn or throw?
+                        boost::apply_visitor(d_collector,*symIter++);
+                    }
+                    q->set_filter_factor(filt_factor);
+                }
+            }
+        }
+    }
+
+    // This starts the data acquisition and puts it in its own thread.
+    rt->set_source(boost::make_shared<datasource::retrieval>(ds, q));
+
+    return rt;
+}
+
+template <typename Processor>
+void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Processor & p,
+                    layer_render_task_ptr rt,
+                    double scale_denom)
+{
+    proj_transform& prj_trans = rt->prj_trans();
+
     memory_datasource cache;
-    bool cache_features = lay.cache_features() && num_styles>1?true:false;
+    bool cache_features = lay.cache_features() && rt->styles().size() > 1 ? true : false;
     bool first = true;
 
     #if defined(RENDERING_STATS)
+    std::vector<std::string> const& style_names = lay.styles();
     int style_index = 0;
-    if (!active_styles.size() > 0) {
-        layer_timer.discard();
-    }
     #endif
-    BOOST_FOREACH (feature_type_style * style, active_styles)
+    BOOST_FOREACH (feature_type_style * style, rt->styles())
     {
         #if defined(RENDERING_STATS)
         std::string s_name = style_names[style_index];
@@ -360,21 +405,6 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
                 {
                     if_rules.push_back(const_cast<rule*>(&r));
                 }
-
-                if ( (ds->type() == datasource::Raster) &&
-                        (ds->params().get<double>("filter_factor",0.0) == 0.0) )
-                {
-                    rule::symbolizers const& symbols = r.get_symbolizers();
-                    rule::symbolizers::const_iterator symIter = symbols.begin();
-                    rule::symbolizers::const_iterator symEnd = symbols.end();
-                    while (symIter != symEnd)
-                    {
-                        // if multiple raster symbolizers, last will be respected
-                        // should we warn or throw?
-                        boost::apply_visitor(d_collector,*symIter++);
-                    }
-                    q.set_filter_factor(filt_factor);
-                }
             }
         }
 
@@ -384,11 +414,11 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
         {
             if (cache_features)
                 first = false;
-            fs = ds->features(q);
+            fs = rt->features();
         }
         else
         {
-            fs = cache.features(q);
+            fs = cache.features(*rt->query());
         }
 
         if (fs)

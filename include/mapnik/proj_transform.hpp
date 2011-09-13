@@ -31,6 +31,7 @@
 
 // boost
 #include <boost/utility.hpp>
+#include <boost/shared_ptr.hpp>
 
 namespace mapnik {
     
@@ -60,6 +61,9 @@ private:
     bool is_source_equal_dest_;
     bool wgs84_to_merc_;
 };
+
+typedef boost::shared_ptr<proj_transform> proj_transform_ptr;
+
 }
 
 #endif // PROJ_TRANSFORM_HPP
