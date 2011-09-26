@@ -305,47 +305,53 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
         }
     }
 
-    // push all property names
-    BOOST_FOREACH(std::string const& name, names)
-    {
-        q.add_property_name(name);
-    }
-
-    // Update filter_factor for all enabled raster layers.
-    BOOST_FOREACH (feature_type_style * style, active_styles)
-    {
-        BOOST_FOREACH(rule const& r, style->get_rules())
-        {
-            if (r.active(scale_denom) &&
-                ds->type() == datasource::Raster &&
-                ds->params().get<double>("filter_factor",0.0) == 0.0)
-            {
-                rule::symbolizers const& symbols = r.get_symbolizers();
-                rule::symbolizers::const_iterator symIter = symbols.begin();
-                rule::symbolizers::const_iterator symEnd = symbols.end();
-                while (symIter != symEnd)
-                {
-                    // if multiple raster symbolizers, last will be respected
-                    // should we warn or throw?
-                    boost::apply_visitor(d_collector,*symIter++);
-                }
-                q.set_filter_factor(filt_factor);
-            }
-        }
-    }
-
-    // Don't even try to retrieve features if there are no active styles.
+    // Don't even try to do more work if there are no active styles.
     if (active_styles.size() > 0)
     {
-        featureset_ptr features = ds->features(q);
-        if (features) {
-            std::string group_by = lay.group_by();
-            bool cache_features = lay.cache_features() && active_styles.size() > 1;
+        // push all property names
+        BOOST_FOREACH(std::string const& name, names)
+        {
+            q.add_property_name(name);
+        }
 
-            // Render incrementally when the column that we group by
-            // changes value.
-            if (group_by != "")
+        // Update filter_factor for all enabled raster layers.
+        BOOST_FOREACH (feature_type_style * style, active_styles)
+        {
+            BOOST_FOREACH(rule const& r, style->get_rules())
             {
+                if (r.active(scale_denom) &&
+                    ds->type() == datasource::Raster &&
+                    ds->params().get<double>("filter_factor",0.0) == 0.0)
+                {
+                    rule::symbolizers const& symbols = r.get_symbolizers();
+                    rule::symbolizers::const_iterator symIter = symbols.begin();
+                    rule::symbolizers::const_iterator symEnd = symbols.end();
+                    while (symIter != symEnd)
+                    {
+                        // if multiple raster symbolizers, last will be respected
+                        // should we warn or throw?
+                        boost::apply_visitor(d_collector,*symIter++);
+                    }
+                    q.set_filter_factor(filt_factor);
+                }
+            }
+        }
+
+        // Also query the group by attribute
+        std::string group_by = lay.group_by();
+        if (group_by != "")
+        {
+            q.add_property_name(group_by);
+        }
+
+        bool cache_features = lay.cache_features() && active_styles.size() > 1;
+
+        // Render incrementally when the column that we group by
+        // changes value.
+        if (group_by != "")
+        {
+            featureset_ptr features = ds->features(q);
+            if (features) {
                 // Cache all features into the memory_datasource before rendering.
                 memory_datasource cache;
                 feature_ptr feature, prev;
@@ -375,8 +381,11 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
                         cache.features(q), prj_trans, scale_denom);
                 }
             }
-            else if (cache_features)
-            {
+        }
+        else if (cache_features)
+        {
+            featureset_ptr features = ds->features(q);
+            if (features) {
                 // Cache all features into the memory_datasource before rendering.
                 memory_datasource cache;
                 feature_ptr feature;
@@ -392,12 +401,15 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay, Proces
                         cache.features(q), prj_trans, scale_denom);
                 }
             }
-            // We only have a single style and no grouping.
-            else
+        }
+        // We only have a single style and no grouping.
+        else
+        {
+            int i = 0;
+            BOOST_FOREACH (feature_type_style * style, active_styles)
             {
-                int i = 0;
-                BOOST_FOREACH (feature_type_style * style, active_styles)
-                {
+                featureset_ptr features = ds->features(q);
+                if (features) {
                     render_style(lay, p, style, style_names[i++],
                         features, prj_trans, scale_denom);
                 }
@@ -429,14 +441,13 @@ void feature_style_processor<Processor>::render_style(
        << "' and style '" << style_name << "'";
     mapnik::progress_timer style_timer(std::clog, s1.str());
 
-    int feature_count = 0;
     int feature_processed_count = 0;
+    int feature_count = 0;
     #endif
 
     feature_ptr feature;
     while ((feature = features->next()))
     {
-
         #if defined(RENDERING_STATS)
         feature_count++;
         bool feat_processed = false;
